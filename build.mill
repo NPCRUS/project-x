@@ -1,0 +1,49 @@
+package build
+import mill._, scalalib._, scalajslib._
+
+val scalaVer = "3.6.3"
+val scalaJsVer = "1.17.0"
+
+object backend extends ScalaModule {
+  def scalaVersion = scalaVer
+  def ivyDeps = Agg(
+    ivy"dev.zio::zio-http:3.1.0"
+  )
+
+  def moduleDeps = Seq( 
+    shared.jvm
+  )
+}
+
+object frontend extends ScalaJSModule {
+  def scalaVersion = scalaVer
+  def scalaJSVersion = scalaJsVer
+
+  def ivyDeps = Agg(
+    ivy"org.scala-js::scalajs-dom::2.8.0",
+    ivy"com.raquo::laminar::17.2.0"
+  )
+
+  def moduleDeps = Seq(
+    shared.js
+  )
+}
+
+object shared extends Module {
+    trait Base extends PlatformScalaModule {
+      def scalaVersion = scalaVer
+      def ivyDeps = Agg(
+          ivy"com.lihaoyi::scalatags::0.13.1",
+      )
+    }
+
+    object jvm extends Base { 
+       
+      def scalaVersion = scalaVer
+    }
+
+    object js extends Base with ScalaJSModule {
+        def scalaVersion = scalaVer
+        def scalaJSVersion = scalaJsVer
+    }
+}
