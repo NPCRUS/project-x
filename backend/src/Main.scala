@@ -7,6 +7,7 @@ import java.net.URI
 import zio.ZIO
 import scala.concurrent.Future
 import zio.Schedule
+import shared.SharedTemplate
 
 object Main extends ZIOAppDefault {
 
@@ -25,7 +26,7 @@ object Main extends ZIOAppDefault {
       Response.html(Html.raw(filters.toString))
     },
     Method.GET / "hello" -> handler { (request: Request) =>
-      state = state + 1
+    //   state = state + 1
       Response.html(Html.raw(
         layout(frag(
           button("refresh", id := "refresh"),
@@ -37,13 +38,13 @@ object Main extends ZIOAppDefault {
       ))
     },
     Method.GET / "hello" / "api" -> handler { (request: Request) =>
-      state = state + 1
+    //   state = state + 1
       ZIO.unit.delay(zio.Duration.fromMillis(150)).map { _ =>
         Response.text(state.toString)
       }
     },
     Method.GET / "main.js" -> handler { (request: Request) =>
-      val file = File("/Users/nikitaglushchenko/projects/private/poor-maxim/out/frontend/fastLinkJS.dest/main.js")
+      val file = File("./out/frontend/fastLinkJS.dest/main.js")
       Body.fromFile(file).map { body =>
         Response(
           headers = Headers.apply(Header.ContentType(MediaType.forContentType("application/json").get)),
@@ -51,8 +52,8 @@ object Main extends ZIOAppDefault {
         )
       }
     }.catchAll {
-          case _ => Handler.internalServerError
-        }
+      case _ => Handler.internalServerError
+    }
   )
 
   // Run it like any simple app
