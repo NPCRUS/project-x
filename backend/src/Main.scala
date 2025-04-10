@@ -10,6 +10,8 @@ import zio.Schedule
 import utils.PageContext
 import views.*
 import zio.Duration
+import java.io.FileWriter
+import zio.http.codec.PathCodec.segment
 
 object Main extends ZIOAppDefault {
 
@@ -24,38 +26,36 @@ object Main extends ZIOAppDefault {
     Method.GET / Root -> handler { (request: Request) =>
       Response.html(Html.raw(layout(h1("hello world")).toString))
     },
-    Method.GET / "hello" -> handler { (request: Request) =>
-      state = state + 1
-      Response.html(Html.raw(
-        layout(frag(
-          button("refresh", id := "refresh"),
-          div(
-            id := "inner",
-            template.renderHello(state)
+    Method.GET / "dest" / trailing -> handler { (request: Request) =>
+      val path = request.url.path.toString.stripPrefix("/dest/")
+      val file = File(s"dest/$path")
+      
+      if (file.exists() && file.isFile) {
+        val contentType = path.split('.').lastOption match {
+          case Some("js") => "application/javascript"
+          case Some("css") => "text/css"
+          case Some("html") => "text/html"
+          case Some("json") => "application/json"
+          case Some("png") => "image/png"
+          case Some("jpg") | Some("jpeg") => "image/jpeg"
+          case Some("svg") => "image/svg+xml"
+          case _ => "application/octet-stream"
+        }
+        
+        Body.fromFile(file).map { body =>
+          Response(
+            headers = Headers(Header.ContentType(MediaType.forContentType(contentType).get)),
+            body = body
           )
-        )).toString
-      ))
-    },
-    Method.GET / "hello" / "api" -> handler { (request: Request) =>
-      state = state + 1
-      ZIO.unit.delay(zio.Duration.fromMillis(150)).map { _ =>
-        Response.text(state.toString)
-      }
-    },
-    Method.GET / "main.js" -> handler { (request: Request) =>
-      val file = File("/Users/nikitaglushchenko/projects/private/poor-maxim/out/frontend/fastLinkJS.dest/main.js")
-      Body.fromFile(file).map { body =>
-        Response(
-          headers = Headers.apply(Header.ContentType(MediaType.forContentType("application/json").get)),
-          body = body
-        )
+        }
+      } else {
+        ZIO.succeed(Response.notFound)
       }
     }.catchAll {
-          case _ => Handler.internalServerError
-        }
+      case _ => Handler.internalServerError
+    }
   )
 
-  // Run it like any simple app
   override val run = Server.serve(routes).provide(Server.defaultWith(c =>
     c.copy(gracefulShutdownTimeout = Duration.fromMillis(0))
         .port(5001)
