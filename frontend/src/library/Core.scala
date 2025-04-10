@@ -22,13 +22,17 @@ case class RuntimeComponent[State, Action] (
 )
 
 object Core {
-    // TODO: each action stores its own runtime component, fix
-    val store: mutable.Map[String, RuntimeComponent[?, ?]] = mutable.Map.empty
+  // Map[ContainerId, RuntimeComponent]
+  val runtimeComponents: mutable.Map[String, RuntimeComponent[?, ?]] = mutable.Map.empty
+  // Map[Action, ContainerId]
+  val store: mutable.Map[String, String] = mutable.Map.empty
 
-    @JSExportTopLevel("dispatch")
-    def dispatch (actionName: String) = {
-        store.get(actionName) match {
-            case Some(runtimeComponent) => {
+  @JSExportTopLevel("dispatch")
+  def dispatch (actionName: String) = {
+      store.get(actionName) match {
+          case Some(containerId) => {
+            runtimeComponents.get(containerId) match {
+              case Some(runtimeComponent) => {
                 val container = dom.document.getElementById(runtimeComponent.containerId)
 
                 val newState = runtimeComponent.component.reduce(
@@ -41,30 +45,38 @@ object Core {
                 container.innerHTML = ""
                 container.appendChild(newContent)
 
-                store.update(actionName, runtimeComponent.copy(state = newState))
+                runtimeComponents.update(containerId, runtimeComponent.copy(state = newState))
+              }
+              case None => println(s"No component found to handle dispatched action. Action: $actionName")
             }
-            case None => println(s"No component found to handle dispatched action. Action: $actionName")
-        }
-    }
+          }
+          case None => println(s"No component found to handle dispatched action. Action: $actionName")
+      }
+  }
 
-    def register[State, Action] (
-        containerId: String,
-        component: Component[State, Action],
-        initialState: State,
-        actions: Set[Action],
-        actionToString: Action => String,
-        stringToAction: String => Action
-    ) = {
-        actions.foreach((action) => {
-            store.update(
-                actionToString(action),
-                RuntimeComponent(
-                    containerId,
-                    component,
-                    initialState,
-                    stringToAction
-                )
-            )
-        })
-    }
+  def register[State, Action] (
+      containerId: String,
+      component: Component[State, Action],
+      initialState: State,
+      actions: Set[Action],
+      actionToString: Action => String,
+      stringToAction: String => Action
+  ) = {
+      runtimeComponents.update(
+        containerId,
+        RuntimeComponent(
+            containerId,
+            component,
+            initialState,
+            stringToAction
+        )
+      )
+
+      actions.foreach((action) => {
+          store.update(
+              actionToString(action),
+              containerId,
+          )
+      })
+  }
 }
