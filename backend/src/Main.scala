@@ -26,8 +26,8 @@ object Main extends ZIOAppDefault {
     Method.GET / Root -> handler { (request: Request) =>
       Response.html(Html.raw(layout(h1("hello world")).toString))
     },
-    Method.GET / "dest" / trailing -> handler { (request: Request) =>
-      val path = request.url.path.toString.stripPrefix("/dest/")
+    Method.GET / trailing -> handler { (request: Request) =>
+      val path = request.url.path.toString
       val file = File(s"dest/$path")
       
       if (file.exists() && file.isFile) {
