@@ -25,11 +25,11 @@ object Core {
   // Map[ContainerId, RuntimeComponent]
   val runtimeComponents: mutable.Map[String, RuntimeComponent[?, ?]] = mutable.Map.empty
   // Map[Action, ContainerId]
-  val store: mutable.Map[String, String] = mutable.Map.empty
+  val actionComponents: mutable.Map[String, String] = mutable.Map.empty
 
   @JSExportTopLevel("dispatch")
   def dispatch (actionName: String) = {
-      store.get(actionName) match {
+      actionComponents.get(actionName) match {
           case Some(containerId) => {
             runtimeComponents.get(containerId) match {
               case Some(runtimeComponent) => {
@@ -73,7 +73,7 @@ object Core {
       )
 
       actions.foreach((action) => {
-          store.update(
+          actionComponents.update(
               actionToString(action),
               containerId,
           )
